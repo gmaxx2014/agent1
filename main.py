@@ -3,6 +3,7 @@ import json
 import os
 import gradio as gr
 import random
+from datetime import datetime
 
 API_URL = "http://localhost:1234/v1/chat/completions"
 
@@ -36,6 +37,22 @@ chat_history = [
     {"role": "system", "content": combined_prompt}
 ]
 
+# Function to log conversation to console
+def log_conversation(role, message, image_sent=False):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if role == "user":
+        print(f"\n[{timestamp}] USER: {message}")
+    elif role == "assistant":
+        if image_sent:
+            print(f"[{timestamp}] ASSISTANT: [PHOTO SENT] {message}")
+        else:
+            print(f"[{timestamp}] ASSISTANT: {message}")
+    elif role == "system":
+        print(f"[{timestamp}] SYSTEM: {message}")
+
+# Log initial system prompt
+log_conversation("system", f"System prompt loaded: {len(combined_prompt)} characters")
+
 # Modified getImage function to return a random photo from the array
 def getImage(query):
     print(f"[System] Getting photo for query: {query}")
@@ -48,6 +65,9 @@ def getImage(query):
         return "no_photo_available.png"
 
 def send_message(user_message, history):
+    # Log user message
+    log_conversation("user", user_message)
+    
     # Append user message to chat history
     chat_history.append({"role": "user", "content": user_message})
 
@@ -72,6 +92,7 @@ def send_message(user_message, history):
         # Check for function call
         assistant_reply = content
         image_to_display = None
+        image_sent = False
         
         try:
             parsed = json.loads(content)
@@ -80,9 +101,13 @@ def send_message(user_message, history):
                 image_filename = getImage(query)
                 assistant_reply = f"[Photo sent] {query}"
                 image_to_display = "resources/images/" + image_filename
-                print("Image Path: " + image_to_display)
+                image_sent = True
+                print(f"[System] Image Path: {image_to_display}")
         except json.JSONDecodeError:
             pass
+
+        # Log assistant response
+        log_conversation("assistant", assistant_reply, image_sent)
 
         # Append assistant reply to chat history
         chat_history.append({"role": "assistant", "content": assistant_reply})
@@ -98,16 +123,21 @@ def send_message(user_message, history):
     
     except Exception as e:
         error_msg = f"Error: {str(e)}"
+        log_conversation("system", f"Error occurred: {error_msg}")
         history.append([user_message, error_msg])
         return "", history
 
 def clear_chat():
     global chat_history
+    # Log chat clearing
+    log_conversation("system", "Chat cleared by user")
+    
     # Reset chat history but keep system prompt
     chat_history = [{"role": "system", "content": combined_prompt}]
     return []
 
 def exit_app():
+    log_conversation("system", "Application closed by user")
     print("Closing application...")
     os._exit(0)
 
@@ -121,6 +151,9 @@ def send_photo():
 def send_photo_message(history):
     selected_photo = send_photo()
     if selected_photo:
+        # Log photo sent manually
+        log_conversation("system", f"Manual photo sent: {selected_photo}")
+        
         # Add a system message indicating a photo was sent
         history.append(["", (selected_photo,)])
         return history
@@ -182,4 +215,5 @@ with gr.Blocks(title="Chat Application") as demo:
     )
 
 if __name__ == "__main__":
+    log_conversation("system", "Application started")
     demo.launch(share=False, inbrowser=True)
