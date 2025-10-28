@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import gradio as gr
 
 API_URL = "http://localhost:1234/v1/chat/completions"
 
@@ -37,8 +38,8 @@ def getImage(query):
     # Simulate a URL return
     return f"images/{query.replace(' ', '_')}.png"
 
-def send_message(user_message):
-    # Append user message
+def send_message(user_message, history):
+    # Append user message to chat history
     chat_history.append({"role": "user", "content": user_message})
 
     # Send request to LM Studio
@@ -49,37 +50,95 @@ def send_message(user_message):
         "max_tokens": -1,
         "stream": False
     }
-    response = requests.post(API_URL, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
-    data = response.json()
-    content = data["choices"][0]["message"]["content"]
-
-    # Strip <think> if present
-    if content.startswith("<think>"):
-        content = content.split("</think>")[-1].strip()
-
-    # Check for function call
-    assistant_reply = content
+    
     try:
-        parsed = json.loads(content)
-        if parsed.get("function") == "getImage":
-            query = parsed["arguments"]["query"]
-            image_url = getImage(query)
-            assistant_reply = f"[Image generated] {image_url}"
-    except json.JSONDecodeError:
-        pass
+        response = requests.post(API_URL, headers={"Content-Type": "application/json"}, data=json.dumps(payload))
+        data = response.json()
+        content = data["choices"][0]["message"]["content"]
 
-    # Append assistant reply to chat history
-    chat_history.append({"role": "assistant", "content": assistant_reply})
+        # Strip <think> if present
+        if content.startswith("<think>"):
+            content = content.split("</think>")[-1].strip()
 
-    return assistant_reply
+        # Check for function call
+        assistant_reply = content
+        try:
+            parsed = json.loads(content)
+            if parsed.get("function") == "getImage":
+                query = parsed["arguments"]["query"]
+                image_url = getImage(query)
+                assistant_reply = f"[Image generated] {image_url}"
+        except json.JSONDecodeError:
+            pass
 
-# Chat loop
-print("Chat started. Type 'exit' to quit.")
-while True:
-    user_input = input("You: ")
-    if user_input.lower() in ["exit", "quit"]:
-        print("Exiting chat.")
-        break
+        # Append assistant reply to chat history
+        chat_history.append({"role": "assistant", "content": assistant_reply})
 
-    assistant_response = send_message(user_input)
-    print(f"Babe: {assistant_response}")
+        # Update Gradio chat history
+        history.append([user_message, assistant_reply])
+        
+        return "", history
+    
+    except Exception as e:
+        error_msg = f"Error: {str(e)}"
+        history.append([user_message, error_msg])
+        return "", history
+
+def clear_chat():
+    global chat_history
+    # Reset chat history but keep system prompt
+    chat_history = [{"role": "system", "content": combined_prompt}]
+    return []
+
+def exit_app():
+    print("Closing application...")
+    os._exit(0)
+
+# Create the Gradio interface
+with gr.Blocks(title="Chat Application") as demo:
+    gr.Markdown("# Chat with Babe")
+    
+    chatbot = gr.Chatbot(
+        label="Conversation",
+        height=500
+    )
+    
+    with gr.Row():
+        msg = gr.Textbox(
+            label="Type your message",
+            placeholder="Enter your message here...",
+            scale=4,
+            container=False
+        )
+        submit_btn = gr.Button("Send", variant="primary", scale=1)
+    
+    with gr.Row():
+        clear_btn = gr.Button("Clear Chat", variant="secondary")
+        exit_btn = gr.Button("Exit Application", variant="stop")
+    
+    # Event handlers
+    submit_event = msg.submit(
+        send_message, 
+        inputs=[msg, chatbot], 
+        outputs=[msg, chatbot]
+    )
+    
+    submit_btn.click(
+        send_message, 
+        inputs=[msg, chatbot], 
+        outputs=[msg, chatbot]
+    )
+    
+    clear_btn.click(
+        clear_chat,
+        outputs=[chatbot]
+    )
+    
+    exit_btn.click(
+        exit_app,
+        inputs=None,
+        outputs=None
+    )
+
+if __name__ == "__main__":
+    demo.launch(share=False, inbrowser=True)
