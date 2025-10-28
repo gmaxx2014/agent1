@@ -28,7 +28,9 @@ def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system
 system_prompt = read_system_prompt("system_prompt.txt")
 system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl1.txt")
 system_character_prompt_lvl2 = read_system_prompt("system_character_prompt_lvl2.txt")
-combined_prompt = f"{system_prompt}\n\n{system_character_prompt}"
+
+current_level_prompt = system_character_prompt_lvl1
+combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
 
 # Chat history to preserve context
 chat_history = [
