@@ -2,8 +2,13 @@ import requests
 import json
 import os
 import gradio as gr
+import random
 
 API_URL = "http://localhost:1234/v1/chat/completions"
+
+photos = ["lingerie_photoshoot_backstage_selfie.png", 
+          "lingerie_photoshoot.png", "selfie_nude_home.png", 
+          "selfie_white_shirt.png", "selfie_work.png"]
 
 # Read system prompt from file
 def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
@@ -31,12 +36,16 @@ chat_history = [
     {"role": "system", "content": combined_prompt}
 ]
 
-# Example getImage function
+# Modified getImage function to return a random photo from the array
 def getImage(query):
-    # Replace this with your actual image generation logic
-    print(f"[System] Generating image for query: {query}")
-    # Simulate a URL return
-    return f"images/{query.replace(' ', '_')}.png"
+    print(f"[System] Getting photo for query: {query}")
+    # Select a random photo from the photos array
+    if photos:
+        selected_photo = random.choice(photos)
+        print(f"[System] Selected photo: {selected_photo}")
+        return selected_photo
+    else:
+        return "no_photo_available.png"
 
 def send_message(user_message, history):
     # Append user message to chat history
@@ -62,12 +71,15 @@ def send_message(user_message, history):
 
         # Check for function call
         assistant_reply = content
+        image_to_display = None
+        
         try:
             parsed = json.loads(content)
             if parsed.get("function") == "getImage":
                 query = parsed["arguments"]["query"]
-                image_url = getImage(query)
-                assistant_reply = f"[Image generated] {image_url}"
+                image_filename = getImage(query)
+                assistant_reply = f"[Photo sent] {query}"
+                image_to_display = "resources/images/" + image_filename
         except json.JSONDecodeError:
             pass
 
@@ -75,7 +87,11 @@ def send_message(user_message, history):
         chat_history.append({"role": "assistant", "content": assistant_reply})
 
         # Update Gradio chat history
-        history.append([user_message, assistant_reply])
+        if image_to_display:
+            # If there's an image to display, add it to the chat
+            history.append([user_message, (image_to_display,)])
+        else:
+            history.append([user_message, assistant_reply])
         
         return "", history
     
@@ -94,13 +110,30 @@ def exit_app():
     print("Closing application...")
     os._exit(0)
 
+# Function to manually send a photo (for testing)
+def send_photo():
+    if photos:
+        selected_photo = random.choice(photos)
+        return selected_photo
+    return None
+
+def send_photo_message(history):
+    selected_photo = send_photo()
+    if selected_photo:
+        # Add a system message indicating a photo was sent
+        history.append(["", (selected_photo,)])
+        return history
+    return history
+
 # Create the Gradio interface
 with gr.Blocks(title="Chat Application") as demo:
     gr.Markdown("# Chat with Babe")
     
     chatbot = gr.Chatbot(
         label="Conversation",
-        height=500
+        height=500,
+        # Enable rendering of images in chat
+        render_markdown=True
     )
     
     with gr.Row():
@@ -114,6 +147,7 @@ with gr.Blocks(title="Chat Application") as demo:
     
     with gr.Row():
         clear_btn = gr.Button("Clear Chat", variant="secondary")
+        send_photo_btn = gr.Button("Send Photo", variant="primary")
         exit_btn = gr.Button("Exit Application", variant="stop")
     
     # Event handlers
@@ -131,6 +165,12 @@ with gr.Blocks(title="Chat Application") as demo:
     
     clear_btn.click(
         clear_chat,
+        outputs=[chatbot]
+    )
+    
+    send_photo_btn.click(
+        send_photo_message,
+        inputs=[chatbot],
         outputs=[chatbot]
     )
     

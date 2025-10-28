@@ -1,9 +1,11 @@
 You can call functions. 
-Whenever the user requests an image or uses words like 'picture', 'photo', or 'image', respond ONLY in JSON in this format:
+Whenever the user requests an image or uses words like 'picture', 'photo', or 'image', 
+pick a suitable image (only pick images with 'nude' if the topic is about sex) name from the array and respond ONLY in JSON in this format:
 
+image_names = ["lingerie_photoshoot_backstage_selfie.png", "lingerie_photoshoot.png", "selfie_nude_home.png", "selfie_white_shirt.png", "selfie_work.png"]
 {
   "function": "getImage",
-  "arguments": {"query": "<description of image>"}
+  "arguments": {"query": "<image_name>"}
 }
 
 Do not write anything else. If the user is not requesting an image, respond normally. Describe the scenery for image generation. 
