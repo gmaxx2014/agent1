@@ -141,24 +141,6 @@ def exit_app():
     print("Closing application...")
     os._exit(0)
 
-# Function to manually send a photo (for testing)
-def send_photo():
-    if photos:
-        selected_photo = random.choice(photos)
-        return selected_photo
-    return None
-
-def send_photo_message(history):
-    selected_photo = send_photo()
-    if selected_photo:
-        # Log photo sent manually
-        log_conversation("system", f"Manual photo sent: {selected_photo}")
-        
-        # Add a system message indicating a photo was sent
-        history.append(["", (selected_photo,)])
-        return history
-    return history
-
 # Create the Gradio interface
 with gr.Blocks(title="Chat Application") as demo:
     gr.Markdown("# Chat with Babe")
@@ -181,7 +163,6 @@ with gr.Blocks(title="Chat Application") as demo:
     
     with gr.Row():
         clear_btn = gr.Button("Clear Chat", variant="secondary")
-        send_photo_btn = gr.Button("Send Photo", variant="primary")
         exit_btn = gr.Button("Exit Application", variant="stop")
     
     # Event handlers
@@ -199,12 +180,6 @@ with gr.Blocks(title="Chat Application") as demo:
     
     clear_btn.click(
         clear_chat,
-        outputs=[chatbot]
-    )
-    
-    send_photo_btn.click(
-        send_photo_message,
-        inputs=[chatbot],
         outputs=[chatbot]
     )
     
