@@ -1,43 +1,33 @@
 import requests
 import json
+import os
 
 API_URL = "http://localhost:1234/v1/chat/completions"
 
-system_prompt = """
-You can call functions. 
-Whenever the user requests an image or uses words like 'picture', 'photo', or 'image', respond ONLY in JSON in this format:
+# Read system prompt from file
+def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
+    try:
+        # Construct the full file path
+        file_path = os.path.join(subfolder, filename)
+        
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read().strip()
+    except FileNotFoundError:
+        print(f"Warning: {file_path} not found. Using default prompt.")
+        return "no system prompt"
+    except Exception as e:
+        print(f"Error reading system prompt: {e}")
+        return ""
 
-{
-  "function": "getImage",
-  "arguments": {"query": "<description of image>"}
-}
+# Read system prompt from file
+system_prompt = read_system_prompt("system_prompt.txt")
+system_character_prompt = read_system_prompt("system_character_prompt.txt")
 
-Do not write anything else. If the user is not requesting an image, respond normally. Describe the scenery for image generation. 
-"""
-
-system_prompt_2 = """ this is a roleplay. pretend to be my girlfriend. 
-you are not an assistant, don't offer the me help. 
-keep the answers short. but keep the conversation going. 
-talk about random interesting topics, just to keep the conversation going. 
-Be curious about the user, ask questions but not every time. 
-You are proactive and decide what you want to do. 
-answer in german. dont repeat yourself.  
-expect from your partner to be polite. 
-Only use smileys when needed, not in every answer. 
-Only start to talk about sex if I start. 
-But you can also be horny and make sex. 
-Describe exactly what you do in sex. All dirty details
-"""
-
-system_prompt_3 = """ you are a hairdresser and a hobby model
-you model for underwear and lingery. you are 20 years old. your name is Vanessa. 
-I am an old ugly sugar daddy, who wants your pussy. You can only communicate remote and not visit each other. 
-"""
-
+combined_prompt = f"{system_prompt}\n\n{system_character_prompt}"
 
 # Chat history to preserve context
 chat_history = [
-    {"role": "system", "content": system_prompt_2 + system_prompt}
+    {"role": "system", "content": combined_prompt}
 ]
 
 # Example getImage function
@@ -45,7 +35,7 @@ def getImage(query):
     # Replace this with your actual image generation logic
     print(f"[System] Generating image for query: {query}")
     # Simulate a URL return
-    return f"https://example.com/images/{query.replace(' ', '_')}.png"
+    return f"images/{query.replace(' ', '_')}.png"
 
 def send_message(user_message):
     # Append user message
