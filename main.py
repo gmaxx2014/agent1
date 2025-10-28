@@ -14,9 +14,7 @@ photos = ["lingerie_photoshoot_backstage_selfie.png",
 # Read system prompt from file
 def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
     try:
-        # Construct the full file path
         file_path = os.path.join(subfolder, filename)
-        
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read().strip()
     except FileNotFoundError:
@@ -26,10 +24,10 @@ def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system
         print(f"Error reading system prompt: {e}")
         return ""
 
-# Read system prompt from file
+# Read system prompts
 system_prompt = read_system_prompt("system_prompt.txt")
-system_character_prompt = read_system_prompt("system_character_prompt.txt")
-
+system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl1.txt")
+system_character_prompt_lvl2 = read_system_prompt("system_character_prompt_lvl2.txt")
 combined_prompt = f"{system_prompt}\n\n{system_character_prompt}"
 
 # Chat history to preserve context
@@ -56,7 +54,6 @@ log_conversation("system", f"System prompt loaded: {len(combined_prompt)} charac
 # Modified getImage function to return a random photo from the array
 def getImage(query):
     print(f"[System] Getting photo for query: {query}")
-    # Select a random photo from the photos array
     if photos:
         selected_photo = random.choice(photos)
         print(f"[System] Selected photo: {selected_photo}")
@@ -114,7 +111,6 @@ def send_message(user_message, history):
 
         # Update Gradio chat history
         if image_to_display:
-            # If there's an image to display, add it to the chat
             history.append([user_message, (image_to_display,)])
         else:
             history.append([user_message, assistant_reply])
@@ -129,10 +125,7 @@ def send_message(user_message, history):
 
 def clear_chat():
     global chat_history
-    # Log chat clearing
     log_conversation("system", "Chat cleared by user")
-    
-    # Reset chat history but keep system prompt
     chat_history = [{"role": "system", "content": combined_prompt}]
     return []
 
@@ -141,29 +134,41 @@ def exit_app():
     print("Closing application...")
     os._exit(0)
 
+# Load CSS
+def load_css():
+    try:
+        with open("styles.css", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
+
+css = load_css()
+
 # Create the Gradio interface
-with gr.Blocks(title="Chat Application") as demo:
-    gr.Markdown("# Chat with Babe")
+with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as demo:
+    gr.Markdown("# 💬 Chat with Babe", elem_classes=["mobile-friendly"])
     
-    chatbot = gr.Chatbot(
-        label="Conversation",
-        height=500,
-        # Enable rendering of images in chat
-        render_markdown=True
-    )
-    
-    with gr.Row():
-        msg = gr.Textbox(
-            label="Type your message",
-            placeholder="Enter your message here...",
-            scale=4,
-            container=False
-        )
-        submit_btn = gr.Button("Send", variant="primary", scale=1)
-    
-    with gr.Row():
-        clear_btn = gr.Button("Clear Chat", variant="secondary")
-        exit_btn = gr.Button("Exit Application", variant="stop")
+    with gr.Column(elem_classes=["mobile-friendly"]):
+        with gr.Column(elem_classes=["chat-container"]):
+            chatbot = gr.Chatbot(
+                label="",
+                show_label=False,
+                elem_classes=["chat-messages"]
+            )
+            
+            with gr.Row(elem_classes=["chat-input"]):
+                msg = gr.Textbox(
+                    label="",
+                    placeholder="Type your message...",
+                    show_label=False,
+                    scale=4,
+                    container=False
+                )
+                submit_btn = gr.Button("Send", variant="primary", scale=1)
+            
+            with gr.Row():
+                clear_btn = gr.Button("Clear Chat")
+                exit_btn = gr.Button("Exit", variant="stop")
     
     # Event handlers
     submit_event = msg.submit(
@@ -178,17 +183,9 @@ with gr.Blocks(title="Chat Application") as demo:
         outputs=[msg, chatbot]
     )
     
-    clear_btn.click(
-        clear_chat,
-        outputs=[chatbot]
-    )
-    
-    exit_btn.click(
-        exit_app,
-        inputs=None,
-        outputs=None
-    )
+    clear_btn.click(clear_chat, outputs=[chatbot])
+    exit_btn.click(exit_app)
 
 if __name__ == "__main__":
     log_conversation("system", "Application started")
-    demo.launch(share=False, inbrowser=True)
+    demo.launch(share=True, inbrowser=True)
