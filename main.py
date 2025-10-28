@@ -30,6 +30,7 @@ system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl1.
 system_character_prompt_lvl2 = read_system_prompt("system_character_prompt_lvl2.txt")
 
 current_level_prompt = system_character_prompt_lvl1
+current_level = 1
 combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
 
 # Chat history to preserve context
@@ -37,21 +38,50 @@ chat_history = [
     {"role": "system", "content": combined_prompt}
 ]
 
+# Store recent user messages for level switching analysis
+recent_user_messages = []
+
+# Function to switch to level 2
+def switch_to_level_2():
+    global current_level, current_level_prompt, combined_prompt, chat_history
+    
+    current_level = 2
+    current_level_prompt = system_character_prompt_lvl2
+    combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
+    
+    # Update system message in chat history
+    chat_history[0] = {"role": "system", "content": combined_prompt}
+    
+    log_conversation("system", f"SWITCHED TO LEVEL {current_level}")
+    return True
+
+# Function to check if we should switch levels automatically
+def check_auto_level_switch():
+    global recent_user_messages, current_level
+    
+    if current_level == 1 and len(recent_user_messages) >= 10:
+        log_conversation("system", f"Auto-switching to Level 2 after {len(recent_user_messages)} messages")
+        return switch_to_level_2()
+    return False
+
 # Function to log conversation to console
 def log_conversation(role, message, image_sent=False):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    level_info = f"[Level {current_level}]"
+    
     if role == "user":
-        print(f"\n[{timestamp}] USER: {message}")
+        print(f"\n[{timestamp}] {level_info} USER: {message}")
     elif role == "assistant":
         if image_sent:
-            print(f"[{timestamp}] ASSISTANT: [PHOTO SENT] {message}")
+            print(f"[{timestamp}] {level_info} ASSISTANT: [PHOTO SENT] {message}")
         else:
-            print(f"[{timestamp}] ASSISTANT: {message}")
+            print(f"[{timestamp}] {level_info} ASSISTANT: {message}")
     elif role == "system":
-        print(f"[{timestamp}] SYSTEM: {message}")
+        print(f"[{timestamp}] {level_info} SYSTEM: {message}")
 
 # Log initial system prompt
 log_conversation("system", f"System prompt loaded: {len(combined_prompt)} characters")
+log_conversation("system", f"Starting at Level {current_level}")
 
 # Modified getImage function to return a random photo from the array
 def getImage(query):
@@ -64,8 +94,20 @@ def getImage(query):
         return "no_photo_available.png"
 
 def send_message(user_message, history):
+    global recent_user_messages
+    
     # Log user message
     log_conversation("user", user_message)
+    
+    # Store user message for level switching analysis
+    recent_user_messages.append(user_message)
+    
+    # Keep only last 15 messages to avoid memory issues
+    if len(recent_user_messages) > 15:
+        recent_user_messages = recent_user_messages[-15:]
+    
+    # Check for automatic level switch
+    level_switched = check_auto_level_switch()
     
     # Append user message to chat history
     chat_history.append({"role": "user", "content": user_message})
@@ -105,14 +147,19 @@ def send_message(user_message, history):
         except json.JSONDecodeError:
             pass
 
+        # Add level switch notification if level was switched
+        if level_switched:
+            assistant_reply = f"[System: Jetzt Level 2] {assistant_reply}"
+
         # Log assistant response
         log_conversation("assistant", assistant_reply, image_sent)
 
         # Append assistant reply to chat history
         chat_history.append({"role": "assistant", "content": assistant_reply})
 
-        # Update Gradio chat history
+        # Update Gradio chat history - CHANGED BACK TO WORKING VERSION
         if image_to_display:
+            # If there's an image to display, add it to the chat
             history.append([user_message, (image_to_display,)])
         else:
             history.append([user_message, assistant_reply])
@@ -126,9 +173,17 @@ def send_message(user_message, history):
         return "", history
 
 def clear_chat():
-    global chat_history
+    global chat_history, recent_user_messages, current_level, current_level_prompt, combined_prompt
     log_conversation("system", "Chat cleared by user")
+    
+    # Reset to level 1
+    current_level = 1
+    current_level_prompt = system_character_prompt_lvl1
+    combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
     chat_history = [{"role": "system", "content": combined_prompt}]
+    recent_user_messages = []
+    
+    log_conversation("system", f"Reset to Level {current_level}")
     return []
 
 def exit_app():
@@ -147,15 +202,14 @@ def load_css():
 css = load_css()
 
 # Create the Gradio interface
-with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as demo:
-    gr.Markdown("# 💬 Chat with Babe", elem_classes=["mobile-friendly"])
-    
+with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as demo:   
     with gr.Column(elem_classes=["mobile-friendly"]):
         with gr.Column(elem_classes=["chat-container"]):
             chatbot = gr.Chatbot(
                 label="",
                 show_label=False,
-                elem_classes=["chat-messages"]
+                elem_classes=["chat-messages"],
+                bubble_full_width=False
             )
             
             with gr.Row(elem_classes=["chat-input"]):
@@ -190,4 +244,4 @@ with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as de
 
 if __name__ == "__main__":
     log_conversation("system", "Application started")
-    demo.launch(share=True, inbrowser=True)
+    demo.launch(share=False, inbrowser=True)
