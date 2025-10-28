@@ -80,6 +80,7 @@ def send_message(user_message, history):
                 image_filename = getImage(query)
                 assistant_reply = f"[Photo sent] {query}"
                 image_to_display = "resources/images/" + image_filename
+                print("Image Path: " + image_to_display)
         except json.JSONDecodeError:
             pass
 
