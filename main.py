@@ -26,12 +26,13 @@ def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system
 
 # Read system prompts
 system_prompt = read_system_prompt("system_prompt.txt")
-system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl1.txt")
+system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl2.txt")
 system_character_prompt_lvl2 = read_system_prompt("system_character_prompt_lvl2.txt")
+function_prompt = read_system_prompt("function_prompt.txt")
 
 current_level_prompt = system_character_prompt_lvl1
 current_level = 1
-combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
+combined_prompt = f"{system_prompt}\n\n{current_level_prompt}\n\n{function_prompt}"
 
 # Chat history to preserve context
 chat_history = [
@@ -47,7 +48,7 @@ def switch_to_level_2():
     
     current_level = 2
     current_level_prompt = system_character_prompt_lvl2
-    combined_prompt = f"{system_prompt}\n\n{current_level_prompt}"
+    combined_prompt = f"{system_prompt}\n\n{current_level_prompt}\n\n{function_prompt}"
     
     # Update system message in chat history
     chat_history[0] = {"role": "system", "content": combined_prompt}
@@ -86,10 +87,17 @@ log_conversation("system", f"Starting at Level {current_level}")
 # Modified getImage function to return a random photo from the array
 def getImage(query):
     print(f"[System] Getting photo for query: {query}")
+    # Look for the exact photo name from the query
+    for photo in photos:
+        if query.lower() in photo.lower():
+            print(f"[System] Found matching photo: {photo}")
+            return photo
+    
+    # If no exact match found, return the first available photo
     if photos:
-        selected_photo = random.choice(photos)
-        print(f"[System] Selected photo: {selected_photo}")
-        return selected_photo
+        fallback_photo = photos[0]
+        print(f"[System] No exact match found, using fallback: {fallback_photo}")
+        return fallback_photo
     else:
         return "no_photo_available.png"
 
@@ -137,14 +145,18 @@ def send_message(user_message, history):
         
         try:
             parsed = json.loads(content)
+            print(parsed)
+            print(parsed.get("function"))
             if parsed.get("function") == "getImage":
                 query = parsed["arguments"]["query"]
+                print(query)
                 image_filename = getImage(query)
                 assistant_reply = f"[Photo sent] {query}"
                 image_to_display = "resources/images/" + image_filename
                 image_sent = True
                 print(f"[System] Image Path: {image_to_display}")
         except json.JSONDecodeError:
+            print("error decoding json")
             pass
 
         # Add level switch notification if level was switched
