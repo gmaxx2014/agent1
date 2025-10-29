@@ -7,12 +7,6 @@ from datetime import datetime
 
 API_URL = "http://localhost:1234/v1/chat/completions"
 
-photos = ["lingerie_photoshoot_backstage_selfie.png", 
-          "lingerie_photoshoot.png", "selfie_nude_home.png", 
-          "selfie_white_shirt.png", "selfie_work.png", "selfie_lingerie_2.png", 
-          "selfie_pussy_5.png", "selfie_pussy_6.png", "selfie_pussy_1.png", "selfie_nude_2.png", 
-          "selfie_nude_white_thirt_2.png", "selfie_nude_white_thirt.png", "swimming_selfie.png"
-          "shopping_selfie.png", "selfie_pussy_2.png", "selfie_nude.png", "bikini_selfie_1.png", "bikini_selfie_2.png"]
 
 # Read system prompt from file
 def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
@@ -90,16 +84,22 @@ log_conversation("system", f"Starting at Level {current_level}")
 # Modified getImage function to return a random photo from the array
 def getImage(query):
     print(f"[System] Getting photo for query: {query}")
-    # Look for the exact photo name from the query
+    # Try to use the query directly as the filename
+    image_path = "resources/images/" + query
+    if os.path.exists(image_path):
+        print(f"[System] Found photo directly: {query}")
+        return query
+    
+    # If direct file doesn't exist, try to find a matching photo from the array
     for photo in photos:
         if query.lower() in photo.lower():
             print(f"[System] Found matching photo: {photo}")
             return photo
     
-    # If no exact match found, return the first available photo
+    # If no match found, return the first available photo
     if photos:
         fallback_photo = photos[0]
-        print(f"[System] No exact match found, using fallback: {fallback_photo}")
+        print(f"[System] No match found, using fallback: {fallback_photo}")
         return fallback_photo
     else:
         return "no_photo_available.png"
