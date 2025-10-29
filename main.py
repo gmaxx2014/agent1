@@ -9,7 +9,10 @@ API_URL = "http://localhost:1234/v1/chat/completions"
 
 photos = ["lingerie_photoshoot_backstage_selfie.png", 
           "lingerie_photoshoot.png", "selfie_nude_home.png", 
-          "selfie_white_shirt.png", "selfie_work.png"]
+          "selfie_white_shirt.png", "selfie_work.png", "selfie_lingerie_2.png", 
+          "selfie_pussy_5.png", "selfie_pussy_6.png", "selfie_pussy_1.png", "selfie_nude_2.png", 
+          "selfie_nude_white_thirt_2.png", "selfie_nude_white_thirt.png", "swimming_selfie.png"
+          "shopping_selfie.png", "selfie_pussy_2.png", "selfie_nude.png", "bikini_selfie_1.png", "bikini_selfie_2.png"]
 
 # Read system prompt from file
 def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
@@ -144,6 +147,7 @@ def send_message(user_message, history):
         image_sent = False
         
         try:
+            print(json.loads(content))
             parsed = json.loads(content)
             print(parsed)
             print(parsed.get("function"))
@@ -156,7 +160,6 @@ def send_message(user_message, history):
                 image_sent = True
                 print(f"[System] Image Path: {image_to_display}")
         except json.JSONDecodeError:
-            print("error decoding json")
             pass
 
         # Add level switch notification if level was switched
