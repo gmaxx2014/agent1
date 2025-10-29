@@ -149,7 +149,7 @@ def send_message(user_message, history):
 
         # Add level switch notification if level was switched
         if level_switched:
-            assistant_reply = f"[System: Jetzt Level 2] {assistant_reply}"
+            print("[System: Jetzt Level 2] ")
 
         # Log assistant response
         log_conversation("assistant", assistant_reply, image_sent)
