@@ -23,7 +23,7 @@ def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system
 
 # Read system prompts
 system_prompt = read_system_prompt("system_prompt.txt")
-system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl2.txt")
+system_character_prompt_lvl1 = read_system_prompt("system_character_prompt_lvl1.txt")
 system_character_prompt_lvl2 = read_system_prompt("system_character_prompt_lvl2.txt")
 function_prompt = read_system_prompt("function_prompt.txt")
 
@@ -89,18 +89,6 @@ def getImage(query):
     if os.path.exists(image_path):
         print(f"[System] Found photo directly: {query}")
         return query
-    
-    # If direct file doesn't exist, try to find a matching photo from the array
-    for photo in photos:
-        if query.lower() in photo.lower():
-            print(f"[System] Found matching photo: {photo}")
-            return photo
-    
-    # If no match found, return the first available photo
-    if photos:
-        fallback_photo = photos[0]
-        print(f"[System] No match found, using fallback: {fallback_photo}")
-        return fallback_photo
     else:
         return "no_photo_available.png"
 
@@ -141,26 +129,24 @@ def send_message(user_message, history):
         if content.startswith("<think>"):
             content = content.split("</think>")[-1].strip()
 
-        # Check for function call
+        # Check for function call - NEW LOGIC
+        print("content: " + content)
         assistant_reply = content
         image_to_display = None
         image_sent = False
         
-        try:
-            print(json.loads(content))
-            parsed = json.loads(content)
-            print(parsed)
-            print(parsed.get("function"))
-            if parsed.get("function") == "getImage":
-                query = parsed["arguments"]["query"]
-                print(query)
-                image_filename = getImage(query)
-                assistant_reply = f"[Photo sent] {query}"
-                image_to_display = "resources/images/" + image_filename
-                image_sent = True
-                print(f"[System] Image Path: {image_to_display}")
-        except json.JSONDecodeError:
-            pass
+        # Check if response starts with "img_name="
+        if content.startswith("img_name="):
+            # Extract the image name after "img_name="
+            image_name = content.split("=", 1)[1].strip()
+            print(f"[System] Image name extracted: {image_name}")
+            
+            # Get the image file
+            image_filename = getImage(image_name)
+            assistant_reply = f"img_name={image_name}"
+            image_to_display = "resources/images/" + image_filename
+            image_sent = True
+            print(f"[System] Image Path: {image_to_display}")
 
         # Add level switch notification if level was switched
         if level_switched:
@@ -172,7 +158,7 @@ def send_message(user_message, history):
         # Append assistant reply to chat history
         chat_history.append({"role": "assistant", "content": assistant_reply})
 
-        # Update Gradio chat history - CHANGED BACK TO WORKING VERSION
+        # Update Gradio chat history
         if image_to_display:
             # If there's an image to display, add it to the chat
             history.append([user_message, (image_to_display,)])
