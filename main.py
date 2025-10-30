@@ -56,7 +56,7 @@ def switch_to_level_2():
 def check_auto_level_switch():
     global recent_user_messages, current_level
     
-    if current_level == 1 and len(recent_user_messages) >= 10:
+    if current_level == 1 and len(recent_user_messages) >= 5:
         log_conversation("system", f"Auto-switching to Level 2 after {len(recent_user_messages)} messages")
         return switch_to_level_2()
     return False
