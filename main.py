@@ -7,7 +7,6 @@ from datetime import datetime
 
 API_URL = "http://localhost:1234/v1/chat/completions"
 
-
 # Read system prompt from file
 def read_system_prompt(filename="system_prompt.txt", subfolder="resources/system_prompts"):
     try:
@@ -129,7 +128,7 @@ def send_message(user_message, history):
         if content.startswith("<think>"):
             content = content.split("</think>")[-1].strip()
 
-        # Check for function call - NEW LOGIC
+        # Check for function call
         print("content: " + content)
         assistant_reply = content
         image_to_display = None
@@ -143,7 +142,7 @@ def send_message(user_message, history):
             
             # Get the image file
             image_filename = getImage(image_name)
-            assistant_reply = f"img_name={image_name}"
+            assistant_reply = "📸 Photo"
             image_to_display = "resources/images/" + image_filename
             image_sent = True
             print(f"[System] Image Path: {image_to_display}")
@@ -202,30 +201,52 @@ def load_css():
 
 css = load_css()
 
-# Create the Gradio interface
-with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as demo:   
+# Create the Gradio interface with Telegram styling
+with gr.Blocks(title="Telegram Chat", css=css, theme=gr.themes.Default()) as demo:   
     with gr.Column(elem_classes=["mobile-friendly"]):
+        # Telegram-style Header
+        with gr.Row(elem_classes=["chat-header"]):
+            with gr.Column(scale=0):
+                gr.HTML("""
+                <div class="avatar">
+                    <span>B</span>
+                    <div class="online-indicator"></div>
+                </div>
+                """)
+            with gr.Column(scale=1, elem_classes=["chat-info"]):
+                gr.HTML("""
+                <div class="chat-name">Babe 💕</div>
+                <div class="chat-status">online • last seen recently</div>
+                """)
+        
+        # Chat Messages
         with gr.Column(elem_classes=["chat-container"]):
             chatbot = gr.Chatbot(
                 label="",
                 show_label=False,
                 elem_classes=["chat-messages"],
-                bubble_full_width=False
+                bubble_full_width=False,
+                height=600,
+                show_copy_button=False
             )
-            
-            with gr.Row(elem_classes=["chat-input"]):
-                msg = gr.Textbox(
-                    label="",
-                    placeholder="Type your message...",
-                    show_label=False,
-                    scale=4,
-                    container=False
-                )
-                submit_btn = gr.Button("Send", variant="primary", scale=1)
-            
-            with gr.Row():
-                clear_btn = gr.Button("Clear Chat")
-                exit_btn = gr.Button("Exit", variant="stop")
+        
+        # Chat Input - Telegram Style
+        with gr.Row(elem_classes=["chat-input"]):
+            msg = gr.Textbox(
+                label="",
+                placeholder="Message...",
+                show_label=False,
+                scale=4,
+                container=False,
+                elem_classes=["textbox"],
+                max_lines=5
+            )
+            submit_btn = gr.Button("➤", variant="primary", scale=1, elem_classes=["send-button"])
+        
+        # Action Buttons
+        with gr.Row(elem_classes=["action-buttons"]):
+            clear_btn = gr.Button("Clear History", elem_classes=["clear-button"])
+            exit_btn = gr.Button("Exit", variant="stop", elem_classes=["exit-button"])
     
     # Event handlers
     submit_event = msg.submit(
@@ -245,4 +266,4 @@ with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as de
 
 if __name__ == "__main__":
     log_conversation("system", "Application started")
-    demo.launch(share=True, inbrowser=True)
+    demo.launch(share=False, inbrowser=True)
