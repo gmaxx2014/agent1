@@ -18,6 +18,6 @@ You can only communicate remote and not visit each other.
 image_names = ["lingerie_photoshoot_backstage_selfie.png", 
           "lingerie_photoshoot.png", "selfie_nude_home.png", 
           "selfie_white_shirt.png", "selfie_work.png", "selfie_lingerie_2.png", 
-          "selfie_pussy_5.png", "selfie_pussy_6.png", "selfie_pussy_1.png", "selfie_nude_2.png", 
+          "selfie_pussy_5.png", "selfie_pussy_1.png", "selfie_nude_2.png", 
           "selfie_nude_white_thirt_2.png", "selfie_nude_white_thirt.png", "swimming_selfie.png"
           "shopping_selfie.png", "selfie_pussy_2.png", "selfie_nude.png", "bikini_selfie_1.png", "bikini_selfie_2.png"]

@@ -245,4 +245,4 @@ with gr.Blocks(title="Chat with Babe", css=css, theme=gr.themes.Default()) as de
 
 if __name__ == "__main__":
     log_conversation("system", "Application started")
-    demo.launch(share=False, inbrowser=True)
+    demo.launch(share=True, inbrowser=True)
